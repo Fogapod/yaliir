@@ -15,7 +15,7 @@ pub struct Iter<'a, T> {
     next: Option<&'a Node<T>>,
 }
 pub struct IterMut<'a, T> {
-    next: Option<'a mut Node<T>>,
+    next: Option<&'a mut Node<T>>,
 }
 pub struct IntoIter<T>(LinkedList<T>);
 
@@ -54,6 +54,12 @@ impl<T> LinkedList<T> {
         }
     }
 
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        IterMut {
+            next: self.head.as_deref_mut(),
+        }
+    }
+
     pub fn into_iter(self) -> IntoIter<T> {
         IntoIter(self)
     }
@@ -80,6 +86,17 @@ impl<'a, T> Iterator for Iter<'a, T> {
         self.next.map(|node| {
             self.next = node.next.as_deref();
             &node.data
+        })
+    }
+}
+
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next.take().map(|node| {
+            self.next = node.next.as_deref_mut();
+            &mut node.data
         })
     }
 }
@@ -152,18 +169,6 @@ mod test {
     }
 
     #[test]
-    fn into_iter() {
-        let mut list = LinkedList::new();
-        list.push(1);
-        list.push(2);
-
-        let mut iter = list.into_iter();
-        assert_eq!(iter.next(), Some(2));
-        assert_eq!(iter.next(), Some(1));
-        assert_eq!(iter.next(), None);
-    }
-
-    #[test]
     fn iter() {
         let mut list = LinkedList::new();
         list.push(1);
@@ -172,6 +177,30 @@ mod test {
         let mut iter = list.iter();
         assert_eq!(iter.next(), Some(&2));
         assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iter_mut() {
+        let mut list = LinkedList::new();
+        list.push(1);
+        list.push(2);
+
+        let mut iter = list.iter_mut();
+        assert_eq!(iter.next(), Some(&mut 2));
+        assert_eq!(iter.next(), Some(&mut 1));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn into_iter() {
+        let mut list = LinkedList::new();
+        list.push(1);
+        list.push(2);
+
+        let mut iter = list.into_iter();
+        assert_eq!(iter.next(), Some(2));
+        assert_eq!(iter.next(), Some(1));
         assert_eq!(iter.next(), None);
     }
 }
