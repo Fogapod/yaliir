@@ -1,4 +1,5 @@
-use lox::datastructures::linkedlist::LinkedList;
+use yaliir::datastructures::linkedlist::LinkedList;
+
 fn main() {
     let mut a = LinkedList::new();
     println!("{:?}", a);

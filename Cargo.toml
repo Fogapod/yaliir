@@ -1,5 +1,5 @@
 [package]
-name = "lox"
+name = "yaliir"
 version = "0.1.0"
 authors = ["Eugene <fogaprod@gmail.com>"]
 edition = "2018"

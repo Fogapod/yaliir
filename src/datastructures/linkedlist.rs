@@ -1,3 +1,5 @@
+// https://rust-unofficial.github.io/too-many-lists
+
 #[derive(Debug)]
 struct Node<T> {
     data: T,
