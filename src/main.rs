@@ -1,5 +1,4 @@
 use lox::datastructures::linkedlist::LinkedList;
-
 fn main() {
     let mut a = LinkedList::new();
     println!("{:?}", a);
