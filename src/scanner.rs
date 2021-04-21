@@ -7,19 +7,19 @@ static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
     "and" => TokenType::And,
     "class" => TokenType::Class,
     "else" => TokenType::Else,
-    "false"=>TokenType::False,
-    "fun"=>TokenType::Fun,
-    "for"=>TokenType::For,
-    "if"=>TokenType::If,
-    "mil"=>TokenType::Nil,
-    "or"=>TokenType::Or,
-    "print"=>TokenType::Print,
-    "return"=>TokenType::Return,
-    "super"=>TokenType::Super,
-    "this"=>TokenType::This,
-    "true"=>TokenType::True,
-    "var"=>TokenType::Var,
-    "while"=>TokenType::While,
+    "false" => TokenType::False,
+    "fun" => TokenType::Fun,
+    "for" => TokenType::For,
+    "if" => TokenType::If,
+    "nil" => TokenType::Nil,
+    "or" => TokenType::Or,
+    "print" => TokenType::Print,
+    "return" => TokenType::Return,
+    "super" => TokenType::Super,
+    "this" => TokenType::This,
+    "true" => TokenType::True,
+    "var" => TokenType::Var,
+    "while" => TokenType::While,
 };
 
 #[derive(Debug)]
@@ -107,13 +107,15 @@ impl Scanner {
 
         self.advance();
 
-        Ok(self.add_token(TokenType::String {
+        self.add_token(TokenType::String {
             literal: self
                 .source_str
                 .get(self.start + 1..self.current - 1)
                 .unwrap()
                 .to_string(),
-        }))
+        });
+
+        Ok(())
     }
 
     fn is_digit(c: char) -> bool {
@@ -247,7 +249,9 @@ impl Scanner {
             if token == TokenType::Unknown {
                 Err(anyhow!("Unexpected character: {}", c))
             } else {
-                Ok(self.add_token(token))
+                self.add_token(token);
+
+                Ok(())
             }
         } else {
             Ok(())

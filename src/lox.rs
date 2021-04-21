@@ -1,6 +1,5 @@
 use crate::scanner::Scanner;
 use anyhow::{Context, Result};
-use exitcode;
 use std::fs;
 use std::io;
 use std::process;
@@ -14,7 +13,7 @@ impl Lox {
         Self { /*had_error: false*/ }
     }
 
-    pub fn run_file(&self, filename: &String) -> Result<()> {
+    pub fn run_file(&self, filename: &str) -> Result<()> {
         let contents = fs::read_to_string(filename)
             .with_context(|| format!("could not read file `{}`", filename))?;
 
@@ -34,7 +33,7 @@ impl Lox {
 
             if io::stdin()
                 .read_line(&mut line)
-                .with_context(|| format!("unable to read stdin"))?
+                .with_context(|| "unable to read stdin".to_string())?
                 == 0
             {
                 break;
