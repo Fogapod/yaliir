@@ -1,7 +1,8 @@
-use crate::error::error;
-use crate::token::{Token, TokenType};
 use anyhow::{anyhow, Result};
 use phf::phf_map;
+
+use crate::error::error;
+use crate::token::{Token, TokenType};
 
 static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
     "and" => TokenType::And,

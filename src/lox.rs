@@ -1,8 +1,9 @@
-use crate::scanner::Scanner;
 use anyhow::{Context, Result};
 use std::fs;
 use std::io;
 use std::process;
+
+use crate::scanner::Scanner;
 
 pub struct Lox {
     //had_error: bool,
