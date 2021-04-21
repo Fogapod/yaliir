@@ -25,11 +25,10 @@ static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
 
 #[derive(Debug)]
 pub struct Scanner {
-    source_str: String,
     source: Vec<char>,
     tokens: Vec<Token>,
 
-    // TODO: Move to struct
+    // TODO: Move to struct?
     start: usize,
     current: usize,
     line: i32,
@@ -38,7 +37,6 @@ pub struct Scanner {
 impl Scanner {
     pub fn new(source: String) -> Self {
         Self {
-            source_str: source.clone(),
             source: source.chars().collect(),
             tokens: vec![],
 
@@ -53,21 +51,37 @@ impl Scanner {
     }
 
     fn advance(&mut self) -> char {
-        let ch = self.source[self.current];
+        let c = self.source.get(self.current).unwrap_or_else(|| {
+            // clippy does not like expect () here for some reason
+            panic!("advanced into exhausted source at index {}", self.current)
+        });
 
         self.current += 1;
 
-        ch
+        *c
+    }
+
+    fn current_lexeme(&self) -> String {
+        self.source
+            .get(self.start as usize..self.current as usize)
+            .unwrap()
+            .iter()
+            .collect()
     }
 
     fn add_token(&mut self, token: TokenType) {
-        let text = self
-            .source_str
-            .get(self.start as usize..self.current as usize)
-            .unwrap()
-            .to_string();
+        self.tokens
+            .push(Token::new(token, self.current_lexeme(), self.line));
+    }
 
-        self.tokens.push(Token::new(token, text, self.line));
+    fn peek(&self, offset: usize) -> char {
+        let pos = self.current + offset;
+
+        if pos >= self.source.len() {
+            '\0'
+        } else {
+            self.source[pos]
+        }
     }
 
     fn match_(&mut self, expected: char) -> bool {
@@ -75,7 +89,7 @@ impl Scanner {
             return false;
         };
 
-        if self.source[self.current] != expected {
+        if self.peek(0) != expected {
             return false;
         };
 
@@ -84,16 +98,7 @@ impl Scanner {
         true
     }
 
-    fn peek(&self, offset: usize) -> char {
-        let pos = self.current + offset;
-        if pos >= self.source.len() {
-            '\0'
-        } else {
-            self.source[pos]
-        }
-    }
-
-    fn string(&mut self) -> Result<()> {
+    fn parse_string(&mut self) -> Result<()> {
         while self.peek(0) != '"' && !self.is_at_end() {
             if self.peek(0) == '\n' {
                 self.line += 1;
@@ -108,10 +113,11 @@ impl Scanner {
 
         self.advance();
 
+        let current_lexeme = self.current_lexeme();
+
         self.add_token(TokenType::String {
-            literal: self
-                .source_str
-                .get(self.start + 1..self.current - 1)
+            literal: current_lexeme
+                .get(1..current_lexeme.len() - 1)
                 .unwrap()
                 .to_string(),
         });
@@ -123,7 +129,7 @@ impl Scanner {
         c.is_digit(10)
     }
 
-    fn number(&mut self) {
+    fn parse_number(&mut self) {
         while Self::is_digit(self.peek(0)) {
             self.advance();
         }
@@ -132,14 +138,15 @@ impl Scanner {
             self.advance();
         }
 
+        while Self::is_digit(self.peek(0)) {
+            self.advance();
+        }
+
         self.add_token(TokenType::Number {
             literal: self
-                .source_str
-                .get(self.start..self.current)
-                .unwrap()
-                .to_string()
+                .current_lexeme()
                 .parse()
-                .unwrap(),
+                .expect("could not parse float"),
         })
     }
 
@@ -151,19 +158,13 @@ impl Scanner {
         c.is_ascii_alphanumeric() || c == '_'
     }
 
-    fn identifier(&mut self) {
+    fn parse_identifier(&mut self) {
         while Self::is_alphanumeric(self.peek(0)) {
             self.advance();
         }
 
-        let text = self
-            .source_str
-            .get(self.start..self.current)
-            .unwrap()
-            .to_string();
-
         self.add_token({
-            if let Some(token) = KEYWORDS.get(&text[..]) {
+            if let Some(token) = KEYWORDS.get(&self.current_lexeme()[..]) {
                 (*token).clone()
             } else {
                 TokenType::Identifier
@@ -226,7 +227,7 @@ impl Scanner {
             }
             ' ' | '\r' | '\t' => None,
             '"' => {
-                self.string()?;
+                self.parse_string()?;
                 None
             }
             '\n' => {
@@ -235,10 +236,10 @@ impl Scanner {
             }
             _ => {
                 if Self::is_digit(c) {
-                    self.number();
+                    self.parse_number();
                     None
                 } else if Self::is_alpha(c) {
-                    self.identifier();
+                    self.parse_identifier();
                     None
                 } else {
                     Some(TokenType::Unknown)
@@ -271,7 +272,7 @@ impl Scanner {
             }
         }
         self.tokens
-            .push(Token::new(TokenType::Eof, String::from(""), self.line));
+            .push(Token::new(TokenType::Eof, "".to_string(), self.line));
 
         if num_errors > 0 {
             Err(anyhow!(
