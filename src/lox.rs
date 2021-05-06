@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use std::fs;
 use std::io;
+use std::path::Path;
 use std::process;
 
 use crate::scanner::Scanner;
@@ -14,11 +15,11 @@ impl Lox {
         Self { /*had_error: false*/ }
     }
 
-    pub fn run_file(&self, filename: &str) -> Result<()> {
-        let contents = fs::read_to_string(filename)
-            .with_context(|| format!("could not read file `{}`", filename))?;
+    pub fn run_file(&self, source_file: &Path) -> Result<()> {
+        let contents = fs::read_to_string(source_file)
+            .with_context(|| format!("could not read file `{}`", source_file.to_string_lossy()))?;
 
-        if let Err(err) = self.run(contents) {
+        if let Err(err) = self.run(&contents) {
             eprintln!("Error running file: {}", err);
 
             process::exit(exitcode::DATAERR);
@@ -41,7 +42,7 @@ impl Lox {
             }
 
             // ignore result with possible error
-            let _ = self.run(line);
+            let _ = self.run(&line);
         }
 
         eprintln!();
@@ -49,7 +50,7 @@ impl Lox {
         Ok(())
     }
 
-    fn run(&self, source: String) -> Result<()> {
+    fn run(&self, source: &str) -> Result<()> {
         eprintln!("running source:\n{}", source);
 
         let mut scanner = Scanner::new(source);

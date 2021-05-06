@@ -1,12 +1,15 @@
 mod error;
+mod expression;
 mod lox;
 mod scanner;
 mod token;
 
-use human_panic::setup_panic;
 use std::cmp::Ordering;
 use std::env;
+use std::path::Path;
 use std::process;
+
+use human_panic::setup_panic;
 
 use lox::Lox;
 
@@ -18,7 +21,10 @@ fn main() {
     let argv = env::args().collect::<Vec<String>>();
 
     let result = match argv.len().cmp(&2) {
-        Ordering::Equal => lox.run_file(&argv[1]),
+        Ordering::Equal => {
+            let source_file = Path::new(&argv[1]);
+            lox.run_file(&source_file)
+        }
         Ordering::Less => lox.run_prompt(),
         Ordering::Greater => {
             eprintln!("Usage: yaliir [script]");

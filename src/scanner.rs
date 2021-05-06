@@ -35,7 +35,7 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    pub fn new(source: String) -> Self {
+    pub fn new(source: &str) -> Self {
         Self {
             source: source.chars().collect(),
             tokens: vec![],
@@ -70,8 +70,11 @@ impl Scanner {
     }
 
     fn add_token(&mut self, token: TokenType) {
-        self.tokens
-            .push(Token::new(token, self.current_lexeme(), self.line));
+        self.tokens.push(Token {
+            token_type: token,
+            lexeme: self.current_lexeme(),
+            line: self.line,
+        });
     }
 
     fn peek(&self, offset: usize) -> char {
@@ -271,8 +274,11 @@ impl Scanner {
                 num_errors += 1;
             }
         }
-        self.tokens
-            .push(Token::new(TokenType::Eof, "".to_string(), self.line));
+        self.tokens.push(Token {
+            token_type: TokenType::Eof,
+            lexeme: "".to_string(),
+            line: self.line,
+        });
 
         if num_errors > 0 {
             Err(anyhow!(
