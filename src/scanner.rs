@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use phf::phf_map;
 
-use crate::error::error;
+use crate::lox::Lox;
 use crate::token::{Token, TokenType};
 
 static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
@@ -52,7 +52,7 @@ impl Scanner {
 
     fn advance(&mut self) -> char {
         let c = self.source.get(self.current).unwrap_or_else(|| {
-            // clippy does not like expect () here for some reason
+            // clippy does not like expect() here for some reason
             panic!("advanced into exhausted source at index {}", self.current)
         });
 
@@ -263,15 +263,12 @@ impl Scanner {
         }
     }
 
-    pub fn scan_tokens(&mut self) -> Result<&Vec<Token>> {
-        let mut num_errors = 0;
-
+    pub fn scan_tokens<'a>(&mut self, lox: &'a mut Lox) -> &Vec<Token> {
         while !self.is_at_end() {
             self.start = self.current;
 
             if let Err(err) = self.scan_token() {
-                error(self.line, err.to_string());
-                num_errors += 1;
+                lox.error(self.line, &err.to_string());
             }
         }
         self.tokens.push(Token {
@@ -280,13 +277,6 @@ impl Scanner {
             line: self.line,
         });
 
-        if num_errors > 0 {
-            Err(anyhow!(
-                "Encountered {} error(s) during token scanning",
-                num_errors
-            ))
-        } else {
-            Ok(&self.tokens)
-        }
+        &self.tokens
     }
 }

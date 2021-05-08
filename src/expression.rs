@@ -123,11 +123,11 @@ pub trait Visitor<R> {
     fn visit_variable(&self, name: &Token) -> R;
 }
 
-struct AstPrinter {}
+pub struct AstPrinter {}
 
 impl AstPrinter {
     #[allow(dead_code)]
-    fn print(&self, expr: Expr) -> String {
+    pub fn print(&self, expr: Expr) -> String {
         expr.accept(self)
     }
 

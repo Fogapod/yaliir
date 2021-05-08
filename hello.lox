@@ -1,7 +1,3 @@
-// this is a comment
-(( )){} // grouping stuff
-!*+-/=<> <= == // operators
-
 1 + 2.0
 // comment
 print "Hello, world!";
