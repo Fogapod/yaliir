@@ -1,24 +1,5 @@
+use crate::object::Object;
 use crate::token::Token;
-use std::fmt;
-
-#[derive(Debug)]
-pub enum Object {
-    Null,
-    Boolean(bool),
-    Number(f64),
-    String(String),
-}
-
-impl fmt::Display for Object {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &self {
-            Object::Null => write!(f, "nil"),
-            Object::Boolean(v) => write!(f, "{}", v.to_string()),
-            Object::Number(v) => write!(f, "{}", v.to_string()),
-            Object::String(v) => write!(f, "{}", v.to_string()),
-        }
-    }
-}
 
 #[derive(Debug)]
 pub enum Expr {

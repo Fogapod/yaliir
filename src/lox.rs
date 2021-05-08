@@ -4,19 +4,26 @@ use std::io;
 use std::path::Path;
 use std::process;
 
-use crate::expression::AstPrinter;
+use crate::errors::RuntimeError;
+use crate::interpreter::Interpreter;
 use crate::parser::Parser;
 use crate::scanner::Scanner;
 use crate::token::{Token, TokenType};
 
 #[derive(Debug)]
 pub struct Lox {
+    interpreter: Interpreter,
     had_error: bool,
+    had_runtime_error: bool,
 }
 
 impl Lox {
     pub fn new() -> Self {
-        Self { had_error: false }
+        Self {
+            had_error: false,
+            had_runtime_error: false,
+            interpreter: Interpreter {},
+        }
     }
 
     pub fn run_file(&mut self, source_file: &Path) -> Result<()> {
@@ -28,6 +35,11 @@ impl Lox {
 
             process::exit(exitcode::DATAERR);
         };
+
+        // highly inconsistent with had_error handling
+        if self.had_runtime_error {
+            process::exit(exitcode::SOFTWARE);
+        }
 
         Ok(())
     }
@@ -46,6 +58,7 @@ impl Lox {
             }
 
             let _ = self.run(&line);
+            self.had_error = false;
         }
 
         eprintln!();
@@ -70,8 +83,15 @@ impl Lox {
             anyhow::bail!("encountered errors during parser");
         }
 
+        let interpreter = &mut self.interpreter;
+
         match expression {
-            Some(expression) => println!("{}", AstPrinter {}.print(expression)),
+            Some(expression) => {
+                if let Err(error) = interpreter.interpret(&expression) {
+                    println!("{}", error);
+                    self.runtime_error(&error.downcast_ref::<RuntimeError>().unwrap());
+                }
+            }
             None => println!("nothing parsed"),
         }
 
@@ -88,6 +108,12 @@ impl Lox {
         } else {
             self.report(token.line, &format!(" at '{}'", token.lexeme), message);
         }
+    }
+
+    pub fn runtime_error(&mut self, error: &RuntimeError) {
+        eprintln!("{}\n[line {}]", error.message, error.token.line);
+
+        self.had_runtime_error = true;
     }
 
     fn report(&mut self, line: i32, place: &str, message: &str) {

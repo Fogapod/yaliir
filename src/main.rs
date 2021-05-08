@@ -1,5 +1,8 @@
+mod errors;
 mod expression;
+mod interpreter;
 mod lox;
+mod object;
 mod parser;
 mod scanner;
 mod token;

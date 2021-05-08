@@ -1,24 +1,9 @@
-use crate::expression::{Expr, Object};
+use crate::expression::Expr;
 use crate::lox::Lox;
+use crate::object::Object;
 use crate::token::{Token, TokenType};
-use std::fmt;
 
-#[derive(Debug)]
-pub struct ParseError {
-    token: Token,
-    message: String,
-}
-
-impl fmt::Display for ParseError {
-    // NOTE: this code is never used
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.token.token_type == TokenType::Eof {
-            write!(f, " at end")
-        } else {
-            write!(f, " at '{}'", self.token.lexeme)
-        }
-    }
-}
+use crate::errors::ParseError;
 
 pub struct Parser {
     tokens: Vec<Token>,
