@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -32,17 +31,6 @@ impl fmt::Display for Object {
                 write!(f, "{}", text)
             }
             Object::String(v) => write!(f, "{}", v.to_string()),
-        }
-    }
-}
-
-impl TryFrom<Object> for f64 {
-    type Error = anyhow::Error;
-
-    fn try_from(value: Object) -> Result<Self, Self::Error> {
-        match value {
-            Object::Number(value) => Ok(value),
-            _ => anyhow::bail!("Operand must be a number."),
         }
     }
 }

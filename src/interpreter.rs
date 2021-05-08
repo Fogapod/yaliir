@@ -1,5 +1,3 @@
-use std::convert::{TryFrom, TryInto};
-
 use crate::errors::RuntimeError;
 use crate::expression::{Expr, Visitor};
 use crate::object::Object;
@@ -18,6 +16,16 @@ impl Interpreter {
     fn evaluate(&self, expr: &Expr) -> anyhow::Result<Object> {
         expr.accept(self)
     }
+
+    fn operand_into_number(operator: &Token, operand: &Object) -> anyhow::Result<f64> {
+        match operand {
+            Object::Number(value) => Ok(*value),
+            _ => anyhow::bail!(RuntimeError {
+                token: operator.clone(),
+                message: "Operand must be a number.".to_string()
+            }),
+        }
+    }
 }
 
 impl Visitor<anyhow::Result<Object>> for Interpreter {
@@ -29,9 +37,18 @@ impl Visitor<anyhow::Result<Object>> for Interpreter {
         let right = self.evaluate(right)?;
 
         Ok(match operator.token_type {
-            TokenType::Minus => Object::Number(f64::try_from(left)? - f64::try_from(right)?),
-            TokenType::Slash => Object::Number(f64::try_from(left)? / f64::try_from(right)?),
-            TokenType::Star => Object::Number(f64::try_from(left)? * f64::try_from(right)?),
+            TokenType::Minus => Object::Number(
+                Self::operand_into_number(operator, &left)?
+                    - Self::operand_into_number(operator, &right)?,
+            ),
+            TokenType::Slash => Object::Number(
+                Self::operand_into_number(operator, &left)?
+                    / Self::operand_into_number(operator, &right)?,
+            ),
+            TokenType::Star => Object::Number(
+                Self::operand_into_number(operator, &left)?
+                    * Self::operand_into_number(operator, &right)?,
+            ),
             TokenType::Plus => match (&left, &right) {
                 (Object::Number(number1), Object::Number(number2)) => {
                     Object::Number(number1 + number2)
@@ -44,10 +61,22 @@ impl Visitor<anyhow::Result<Object>> for Interpreter {
                     message: "Operands must be two numbers or two strings.".to_string()
                 }),
             },
-            TokenType::Greater => Object::Boolean(f64::try_from(left)? > right.try_into()?),
-            TokenType::GreaterEqual => Object::Boolean(f64::try_from(left)? >= right.try_into()?),
-            TokenType::Less => Object::Boolean(f64::try_from(left)? < right.try_into()?),
-            TokenType::LessEqual => Object::Boolean(f64::try_from(left)? <= right.try_into()?),
+            TokenType::Greater => Object::Boolean(
+                Self::operand_into_number(operator, &left)?
+                    > Self::operand_into_number(operator, &right)?,
+            ),
+            TokenType::GreaterEqual => Object::Boolean(
+                Self::operand_into_number(operator, &left)?
+                    >= Self::operand_into_number(operator, &right)?,
+            ),
+            TokenType::Less => Object::Boolean(
+                Self::operand_into_number(operator, &left)?
+                    < Self::operand_into_number(operator, &right)?,
+            ),
+            TokenType::LessEqual => Object::Boolean(
+                Self::operand_into_number(operator, &left)?
+                    <= Self::operand_into_number(operator, &right)?,
+            ),
             TokenType::BangEqual => Object::Boolean(left != right),
             TokenType::EqualEqual => Object::Boolean(left == right),
             _ => unreachable!(),
@@ -96,7 +125,7 @@ impl Visitor<anyhow::Result<Object>> for Interpreter {
 
         Ok(match operator.token_type {
             TokenType::Bang => Object::Boolean(!right.is_truthy()),
-            TokenType::Minus => Object::Number(-right.try_into()?),
+            TokenType::Minus => Object::Number(-Self::operand_into_number(operator, &right)?),
             _ => unreachable!(),
         })
     }
