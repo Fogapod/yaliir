@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use crate::errors::RuntimeError;
 use crate::expression::{Expr, Visitor};
@@ -44,12 +44,10 @@ impl Visitor<anyhow::Result<Object>> for Interpreter {
                     message: "Operands must be two numbers or two strings.".to_string()
                 }),
             },
-            TokenType::Greater => Object::Boolean(f64::try_from(left)? > f64::try_from(right)?),
-            TokenType::GreaterEqual => {
-                Object::Boolean(f64::try_from(left)? >= f64::try_from(right)?)
-            }
-            TokenType::Less => Object::Boolean(f64::try_from(left)? < f64::try_from(right)?),
-            TokenType::LessEqual => Object::Boolean(f64::try_from(left)? <= f64::try_from(right)?),
+            TokenType::Greater => Object::Boolean(f64::try_from(left)? > right.try_into()?),
+            TokenType::GreaterEqual => Object::Boolean(f64::try_from(left)? >= right.try_into()?),
+            TokenType::Less => Object::Boolean(f64::try_from(left)? < right.try_into()?),
+            TokenType::LessEqual => Object::Boolean(f64::try_from(left)? <= right.try_into()?),
             TokenType::BangEqual => Object::Boolean(left != right),
             TokenType::EqualEqual => Object::Boolean(left == right),
             _ => unreachable!(),
@@ -98,7 +96,7 @@ impl Visitor<anyhow::Result<Object>> for Interpreter {
 
         Ok(match operator.token_type {
             TokenType::Bang => Object::Boolean(!right.is_truthy()),
-            TokenType::Minus => Object::Number(-f64::try_from(right)?),
+            TokenType::Minus => Object::Number(-right.try_into()?),
             _ => unreachable!(),
         })
     }
