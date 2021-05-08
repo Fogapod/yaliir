@@ -1,3 +1,29 @@
-1 + 2.0
-// comment
+// Your first Lox program!
 print "Hello, world!";
+
+// for loop
+for (var a = 1; a < 10; a = a + 1) {
+  print a;
+}
+
+// functions
+fun addPair(a, b) {
+  return a + b;
+}
+
+fun identity(a) {
+  return a;
+}
+
+print identity(addPair)(1, 2); // Prints "3".
+
+// class
+class Breakfast {
+  cook() {
+    print "Eggs a-fryin'!";
+  }
+
+  serve(who) {
+    print "Enjoy your breakfast, " + who + ".";
+  }
+}
