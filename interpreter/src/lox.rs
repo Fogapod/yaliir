@@ -22,7 +22,7 @@ impl Lox {
         Self {
             had_error: false,
             had_runtime_error: false,
-            interpreter: Interpreter {},
+            interpreter: Interpreter::new(),
         }
     }
 
@@ -77,7 +77,7 @@ impl Lox {
         }
 
         let mut parser = Parser::new(tokens);
-        let expression = parser.parse(self);
+        let statements = parser.parse(self);
 
         if self.had_error {
             anyhow::bail!("encountered errors during parser");
@@ -85,14 +85,10 @@ impl Lox {
 
         let interpreter = &mut self.interpreter;
 
-        match expression {
-            Some(expression) => {
-                if let Err(error) = interpreter.interpret(&expression) {
-                    println!("{}", error);
-                    self.runtime_error(&error.downcast_ref::<RuntimeError>().unwrap());
-                }
-            }
-            None => println!("nothing parsed"),
+        if let Err(error) = interpreter.interpret(&statements) {
+            println!("{}", error);
+
+            self.runtime_error(&error.downcast_ref::<RuntimeError>().unwrap());
         }
 
         Ok(())
@@ -104,9 +100,9 @@ impl Lox {
 
     pub fn parser_error(&mut self, token: &Token, message: &str) {
         if token.token_type == TokenType::Eof {
-            self.report(token.line, " at end", message);
+            self.report(token.line, "at end", message);
         } else {
-            self.report(token.line, &format!(" at '{}'", token.lexeme), message);
+            self.report(token.line, &format!("at '{}'", token.lexeme), message);
         }
     }
 
@@ -117,7 +113,7 @@ impl Lox {
     }
 
     fn report(&mut self, line: i32, place: &str, message: &str) {
-        eprintln!("[line {}] Error{}: {}", line, place, message);
+        eprintln!("[line {}] Error {}: {}", line, place, message);
 
         self.had_error = true;
     }

@@ -1,6 +1,7 @@
 use crate::expression::Expr;
 use crate::lox::Lox;
 use crate::object::Object;
+use crate::statement::Stmt;
 use crate::token::{Token, TokenType};
 
 use crate::errors::ParseError;
@@ -18,23 +19,124 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self, lox: &mut Lox) -> Option<Expr> {
-        match self.expression() {
-            Ok(expr) => Some(expr),
-            Err(err) => {
-                if let Some(parser_error) = err.downcast_ref::<ParseError>() {
-                    lox.parser_error(&parser_error.token, &parser_error.message);
-                } else {
-                    panic!("unknown parsing error: {:?}", err);
-                }
+    pub fn parse(&mut self, lox: &mut Lox) -> Vec<Stmt> {
+        let mut statements = vec![];
 
-                None
+        while !self.is_at_end() {
+            match self.declaration() {
+                Err(err) => {
+                    if let Some(parser_error) = err.downcast_ref::<ParseError>() {
+                        lox.parser_error(&parser_error.token, &parser_error.message);
+                    } else {
+                        panic!("unknown parsing error: {:?}", err);
+                    }
+                }
+                Ok(statement) => statements.push(statement),
             }
         }
+
+        statements
     }
 
     fn expression(&mut self) -> anyhow::Result<Expr> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn declaration(&mut self) -> anyhow::Result<Stmt> {
+        let stmt = if self.match_(&[TokenType::Var]) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        };
+
+        match stmt {
+            Err(e) => {
+                self.synchronize();
+                anyhow::bail!(e);
+            }
+            stmt => stmt,
+        }
+    }
+
+    fn statement(&mut self) -> anyhow::Result<Stmt> {
+        if self.match_(&[TokenType::Print]) {
+            self.print_statement()
+        } else if self.match_(&[TokenType::LeftBrace]) {
+            Ok(Stmt::Block {
+                statements: self.block()?,
+            })
+        } else {
+            self.expression_statement()
+        }
+    }
+
+    fn print_statement(&mut self) -> anyhow::Result<Stmt> {
+        let value = self.expression()?;
+
+        self.consume(&TokenType::Semicolon, "Expect ';' after value.")?;
+
+        Ok(Stmt::Print { value })
+    }
+
+    fn var_declaration(&mut self) -> anyhow::Result<Stmt> {
+        let name = self.consume(&TokenType::Identifier, "Expect variable name.")?;
+
+        let initializer = if self.match_(&[TokenType::Equal]) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+
+        self.consume(
+            &TokenType::Semicolon,
+            "Expect ';' after variable declaration.",
+        )?;
+
+        Ok(Stmt::Var { name, initializer })
+    }
+
+    fn expression_statement(&mut self) -> anyhow::Result<Stmt> {
+        let value = self.expression()?;
+
+        self.consume(&TokenType::Semicolon, "Expect ';' after value.")?;
+
+        Ok(Stmt::Expression { value })
+    }
+
+    fn block(&mut self) -> anyhow::Result<Vec<Stmt>> {
+        let mut statements = vec![];
+
+        while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
+            statements.push(self.declaration()?);
+        }
+
+        self.consume(&TokenType::RightBrace, "Expect '}' after block.")?;
+
+        Ok(statements)
+    }
+
+    fn assignment(&mut self) -> anyhow::Result<Expr> {
+        let expr = self.equality()?;
+
+        if self.match_(&[TokenType::Equal]) {
+            let equals = self.previous();
+            let value = self.assignment()?;
+
+            match expr {
+                Expr::Variable { name } => {
+                    return Ok(Expr::Assign {
+                        name,
+                        value: Box::new(value),
+                    })
+                }
+                _ => anyhow::bail!(ParseError {
+                    token: equals,
+                    message: "Invalid assignment target.".to_string()
+                }),
+            }
+        }
+
+        Ok(expr)
     }
 
     fn equality(&mut self) -> anyhow::Result<Expr> {
@@ -127,7 +229,9 @@ impl Parser {
     fn primary(&mut self) -> anyhow::Result<Expr> {
         // much cleaner than using self.match_
         // the downside is having to call self.advance manually
-        let expr = match self.peek().token_type {
+        let current = self.peek();
+
+        let expr = match current.token_type {
             TokenType::False => Expr::Literal {
                 object: Object::Boolean(false),
             },
@@ -143,6 +247,7 @@ impl Parser {
             TokenType::String { literal } => Expr::Literal {
                 object: Object::String(literal),
             },
+            TokenType::Identifier => Expr::Variable { name: current },
             TokenType::LeftParen => {
                 // NOTE: this causes infinite recursion!!!
                 // probably fixed in next chapters
@@ -156,7 +261,7 @@ impl Parser {
             }
             _ => {
                 anyhow::bail!(ParseError {
-                    token: self.peek(),
+                    token: current,
                     message: "Expect expression.".to_string()
                 });
             }
@@ -206,10 +311,8 @@ impl Parser {
                 | TokenType::While
                 | TokenType::Print
                 | TokenType::Return => return,
-                _ => {}
-            }
-
-            self.advance();
+                _ => self.advance(),
+            };
         }
     }
 
@@ -217,7 +320,7 @@ impl Parser {
         if self.is_at_end() {
             false
         } else {
-            self.peek().token_type == *token_type
+            &self.peek().token_type == token_type
         }
     }
 

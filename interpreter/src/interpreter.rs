@@ -1,20 +1,56 @@
+use crate::environment::Environment;
 use crate::errors::RuntimeError;
-use crate::expression::{Expr, Visitor};
+use crate::expression::{self, Expr};
 use crate::object::Object;
+use crate::statement::{self, Stmt};
 use crate::token::{Token, TokenType};
 
 #[derive(Debug)]
-pub struct Interpreter {}
+pub struct Interpreter {
+    environment: Environment,
+}
 
 impl Interpreter {
-    pub fn interpret(&mut self, expression: &Expr) -> anyhow::Result<()> {
-        println!("{}", self.evaluate(expression)?);
+    pub fn new() -> Self {
+        Self {
+            environment: Environment::new(None),
+        }
+    }
+
+    pub fn interpret(&mut self, statements: &[Stmt]) -> anyhow::Result<()> {
+        for statement in statements {
+            self.execute(statement)?;
+        }
 
         Ok(())
     }
 
-    fn evaluate(&self, expr: &Expr) -> anyhow::Result<Object> {
+    fn evaluate(&mut self, expr: &Expr) -> anyhow::Result<Object> {
         expr.accept(self)
+    }
+
+    fn execute(&mut self, stmt: &Stmt) -> anyhow::Result<()> {
+        stmt.accept(self)
+    }
+
+    fn execute_block(
+        &mut self,
+        statements: &[Stmt],
+        environment: &Environment,
+    ) -> anyhow::Result<()> {
+        let previous = self.environment.clone();
+
+        self.environment = environment.clone();
+
+        for statement in statements {
+            if let Err(e) = self.execute(statement) {
+                self.environment = previous;
+
+                anyhow::bail!(e);
+            }
+        }
+
+        Ok(())
     }
 
     fn operand_into_number(operator: &Token, operand: &Object) -> anyhow::Result<f64> {
@@ -106,12 +142,21 @@ impl Interpreter {
     }
 }
 
-impl Visitor<anyhow::Result<Object>> for Interpreter {
-    fn visit_assign(&self, name: &Token, value: &Expr) -> anyhow::Result<Object> {
-        todo!();
+impl expression::Visitor<anyhow::Result<Object>> for Interpreter {
+    fn visit_assign(&mut self, name: &Token, value: &Expr) -> anyhow::Result<Object> {
+        let value = self.evaluate(value)?;
+
+        self.environment.assign(&name, &value)?;
+
+        Ok(value)
     }
 
-    fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> anyhow::Result<Object> {
+    fn visit_binary(
+        &mut self,
+        left: &Expr,
+        operator: &Token,
+        right: &Expr,
+    ) -> anyhow::Result<Object> {
         let left = &self.evaluate(left)?;
         let right = &self.evaluate(right)?;
 
@@ -131,7 +176,7 @@ impl Visitor<anyhow::Result<Object>> for Interpreter {
     }
 
     fn visit_call(
-        &self,
+        &mut self,
         callee: &Token,
         paren: &Expr,
         arguments: &[Expr],
@@ -139,35 +184,40 @@ impl Visitor<anyhow::Result<Object>> for Interpreter {
         todo!();
     }
 
-    fn visit_get(&self, object: &Expr, name: &Token) -> anyhow::Result<Object> {
+    fn visit_get(&mut self, object: &Expr, name: &Token) -> anyhow::Result<Object> {
         todo!();
     }
 
-    fn visit_grouping(&self, expression: &Expr) -> anyhow::Result<Object> {
+    fn visit_grouping(&mut self, expression: &Expr) -> anyhow::Result<Object> {
         self.evaluate(expression)
     }
 
-    fn visit_literal(&self, object: &Object) -> anyhow::Result<Object> {
+    fn visit_literal(&mut self, object: &Object) -> anyhow::Result<Object> {
         Ok(object.clone())
     }
 
-    fn visit_logical(&self, left: &Expr, operator: &Token, right: &Expr) -> anyhow::Result<Object> {
+    fn visit_logical(
+        &mut self,
+        left: &Expr,
+        operator: &Token,
+        right: &Expr,
+    ) -> anyhow::Result<Object> {
         todo!();
     }
 
-    fn visit_set(&self, object: &Expr, token: &Token, value: &Expr) -> anyhow::Result<Object> {
+    fn visit_set(&mut self, object: &Expr, token: &Token, value: &Expr) -> anyhow::Result<Object> {
         todo!();
     }
 
-    fn visit_super(&self, keyword: &Token, method: &Token) -> anyhow::Result<Object> {
+    fn visit_super(&mut self, keyword: &Token, method: &Token) -> anyhow::Result<Object> {
         todo!();
     }
 
-    fn visit_this(&self, keyword: &Token) -> anyhow::Result<Object> {
+    fn visit_this(&mut self, keyword: &Token) -> anyhow::Result<Object> {
         todo!();
     }
 
-    fn visit_unary(&self, operator: &Token, right: &Expr) -> anyhow::Result<Object> {
+    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> anyhow::Result<Object> {
         let right = self.evaluate(right)?;
 
         Ok(match operator.token_type {
@@ -177,7 +227,40 @@ impl Visitor<anyhow::Result<Object>> for Interpreter {
         })
     }
 
-    fn visit_variable(&self, name: &Token) -> anyhow::Result<Object> {
-        todo!();
+    fn visit_variable(&mut self, name: &Token) -> anyhow::Result<Object> {
+        self.environment.get(name)
+    }
+}
+
+impl statement::Visitor<anyhow::Result<()>> for Interpreter {
+    fn visit_expression(&mut self, value: &Expr) -> anyhow::Result<()> {
+        self.evaluate(value).map(|_| {})
+    }
+
+    fn visit_print(&mut self, value: &Expr) -> anyhow::Result<()> {
+        let value = self.evaluate(value)?;
+
+        println!("{}", value);
+
+        Ok(())
+    }
+
+    fn visit_var(&mut self, name: &Token, initializer: &Option<Expr>) -> anyhow::Result<()> {
+        let mut value = Object::Null;
+
+        if let Some(initializer) = initializer {
+            value = self.evaluate(initializer)?;
+        }
+
+        self.environment.define(&name.lexeme, &value);
+
+        Ok(())
+    }
+
+    fn visit_block(&mut self, statements: &[Stmt]) -> anyhow::Result<()> {
+        self.execute_block(
+            statements,
+            &Environment::new(Some(self.environment.clone())),
+        )
     }
 }

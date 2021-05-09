@@ -55,7 +55,7 @@ pub enum Expr {
 }
 
 impl Expr {
-    pub fn accept<R>(&self, visitor: &dyn Visitor<R>) -> R {
+    pub fn accept<R>(&self, visitor: &mut dyn Visitor<R>) -> R {
         match self {
             Expr::Assign { name, value } => visitor.visit_assign(name, value),
             Expr::Binary {
@@ -90,29 +90,29 @@ impl Expr {
     }
 }
 pub trait Visitor<R> {
-    fn visit_assign(&self, name: &Token, value: &Expr) -> R;
-    fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> R;
-    fn visit_call(&self, callee: &Token, paren: &Expr, arguments: &[Expr]) -> R;
-    fn visit_get(&self, object: &Expr, name: &Token) -> R;
-    fn visit_grouping(&self, expression: &Expr) -> R;
-    fn visit_literal(&self, object: &Object) -> R;
-    fn visit_logical(&self, left: &Expr, operator: &Token, right: &Expr) -> R;
-    fn visit_set(&self, object: &Expr, token: &Token, value: &Expr) -> R;
-    fn visit_super(&self, keyword: &Token, method: &Token) -> R;
-    fn visit_this(&self, keyword: &Token) -> R;
-    fn visit_unary(&self, operator: &Token, right: &Expr) -> R;
-    fn visit_variable(&self, name: &Token) -> R;
+    fn visit_assign(&mut self, name: &Token, value: &Expr) -> R;
+    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> R;
+    fn visit_call(&mut self, callee: &Token, paren: &Expr, arguments: &[Expr]) -> R;
+    fn visit_get(&mut self, object: &Expr, name: &Token) -> R;
+    fn visit_grouping(&mut self, expression: &Expr) -> R;
+    fn visit_literal(&mut self, object: &Object) -> R;
+    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> R;
+    fn visit_set(&mut self, object: &Expr, token: &Token, value: &Expr) -> R;
+    fn visit_super(&mut self, keyword: &Token, method: &Token) -> R;
+    fn visit_this(&mut self, keyword: &Token) -> R;
+    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> R;
+    fn visit_variable(&mut self, name: &Token) -> R;
 }
 
 pub struct AstPrinter {}
 
 impl AstPrinter {
     #[allow(dead_code)]
-    pub fn print(&self, expr: Expr) -> String {
+    pub fn print(&mut self, expr: Expr) -> String {
         expr.accept(self)
     }
 
-    fn parenthesize(&self, name: &str, exprs: &[&Expr]) -> String {
+    fn parenthesize(&mut self, name: &str, exprs: &[&Expr]) -> String {
         let mut result = String::new();
 
         result.push('(');
@@ -129,47 +129,47 @@ impl AstPrinter {
 
 impl Visitor<String> for AstPrinter {
     #[allow(unused_variables)]
-    fn visit_assign(&self, name: &Token, value: &Expr) -> String {
+    fn visit_assign(&mut self, name: &Token, value: &Expr) -> String {
         todo!();
     }
-    fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> String {
+    fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> String {
         self.parenthesize(&operator.lexeme, &[left, right])
     }
     #[allow(unused_variables)]
-    fn visit_call(&self, callee: &Token, paren: &Expr, arguments: &[Expr]) -> String {
+    fn visit_call(&mut self, callee: &Token, paren: &Expr, arguments: &[Expr]) -> String {
         todo!();
     }
     #[allow(unused_variables)]
-    fn visit_get(&self, object: &Expr, name: &Token) -> String {
+    fn visit_get(&mut self, object: &Expr, name: &Token) -> String {
         todo!();
     }
-    fn visit_grouping(&self, expression: &Expr) -> String {
+    fn visit_grouping(&mut self, expression: &Expr) -> String {
         self.parenthesize("group", &[expression])
     }
-    fn visit_literal(&self, object: &Object) -> String {
+    fn visit_literal(&mut self, object: &Object) -> String {
         object.to_string()
     }
     #[allow(unused_variables)]
-    fn visit_logical(&self, left: &Expr, operator: &Token, right: &Expr) -> String {
+    fn visit_logical(&mut self, left: &Expr, operator: &Token, right: &Expr) -> String {
         todo!();
     }
     #[allow(unused_variables)]
-    fn visit_set(&self, object: &Expr, token: &Token, value: &Expr) -> String {
+    fn visit_set(&mut self, object: &Expr, token: &Token, value: &Expr) -> String {
         todo!();
     }
     #[allow(unused_variables)]
-    fn visit_super(&self, keyword: &Token, method: &Token) -> String {
+    fn visit_super(&mut self, keyword: &Token, method: &Token) -> String {
         todo!();
     }
     #[allow(unused_variables)]
-    fn visit_this(&self, keyword: &Token) -> String {
+    fn visit_this(&mut self, keyword: &Token) -> String {
         todo!();
     }
-    fn visit_unary(&self, operator: &Token, right: &Expr) -> String {
+    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> String {
         self.parenthesize(&operator.lexeme, &[right])
     }
     #[allow(unused_variables)]
-    fn visit_variable(&self, name: &Token) -> String {
+    fn visit_variable(&mut self, name: &Token) -> String {
         todo!();
     }
 }
