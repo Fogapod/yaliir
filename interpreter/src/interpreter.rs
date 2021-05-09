@@ -5,7 +5,6 @@ use crate::object::Object;
 use crate::statement::{self, Stmt};
 use crate::token::{Token, TokenType};
 
-#[derive(Debug)]
 pub struct Interpreter {
     environment: Environment,
 }

@@ -23,7 +23,6 @@ static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
     "while" => TokenType::While,
 };
 
-#[derive(Debug)]
 pub struct Scanner {
     source: Vec<char>,
     tokens: Vec<Token>,

@@ -1,8 +1,9 @@
-use anyhow::{Context, Result};
 use std::fs;
 use std::io;
 use std::path::Path;
 use std::process;
+
+use anyhow::{Context, Result};
 
 use crate::errors::RuntimeError;
 use crate::interpreter::Interpreter;
@@ -10,7 +11,6 @@ use crate::parser::Parser;
 use crate::scanner::Scanner;
 use crate::token::{Token, TokenType};
 
-#[derive(Debug)]
 pub struct Lox {
     interpreter: Interpreter,
     had_error: bool,
@@ -73,19 +73,17 @@ impl Lox {
         let tokens = scanner.scan_tokens(self);
 
         if self.had_error {
-            anyhow::bail!("encountered errors during scanning");
+            anyhow::bail!("encountered error(s) during scanning");
         }
 
         let mut parser = Parser::new(tokens);
         let statements = parser.parse(self);
 
         if self.had_error {
-            anyhow::bail!("encountered errors during parser");
+            anyhow::bail!("encountered error(s) during parsing");
         }
 
-        let interpreter = &mut self.interpreter;
-
-        if let Err(error) = interpreter.interpret(&statements) {
+        if let Err(error) = self.interpreter.interpret(&statements) {
             println!("{}", error);
 
             self.runtime_error(&error.downcast_ref::<RuntimeError>().unwrap());

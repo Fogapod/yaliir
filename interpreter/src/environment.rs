@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::object::Object;
 use crate::token::Token;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Environment {
     enclosing: Option<Box<Environment>>,
     values: HashMap<String, Object>,
