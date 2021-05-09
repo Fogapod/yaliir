@@ -12,13 +12,9 @@ use std::env;
 use std::path::Path;
 use std::process;
 
-use human_panic::setup_panic;
-
 use lox::Lox;
 
 fn main() {
-    setup_panic!();
-
     let mut lox = Lox::new();
 
     let argv = env::args().collect::<Vec<String>>();

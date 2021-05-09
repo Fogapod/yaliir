@@ -9,5 +9,4 @@ edition = "2018"
 [dependencies]
 phf = { version = "0.8.0", features = ["macros"] }
 anyhow = "1.0.40"
-human-panic = "1.0.3"
 exitcode = "1.1.2"

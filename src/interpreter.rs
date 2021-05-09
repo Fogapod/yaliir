@@ -98,11 +98,11 @@ impl Interpreter {
     }
 
     fn operands_cmp_ne(left: &Object, right: &Object, _operator: &Token) -> anyhow::Result<Object> {
-        Ok(Object::Boolean(left == right))
+        Ok(Object::Boolean(left != right))
     }
 
     fn operands_cmp_eq(left: &Object, right: &Object, _operator: &Token) -> anyhow::Result<Object> {
-        Ok(Object::Boolean(left != right))
+        Ok(Object::Boolean(left == right))
     }
 }
 
