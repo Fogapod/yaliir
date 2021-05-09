@@ -97,12 +97,12 @@ impl Interpreter {
         ))
     }
 
-    fn operands_cmp_ne(left: &Object, right: &Object, _operator: &Token) -> anyhow::Result<Object> {
-        Ok(Object::Boolean(left != right))
+    fn operands_cmp_ne(left: &Object, right: &Object, _operator: &Token) -> Object {
+        Object::Boolean(left != right)
     }
 
-    fn operands_cmp_eq(left: &Object, right: &Object, _operator: &Token) -> anyhow::Result<Object> {
-        Ok(Object::Boolean(left == right))
+    fn operands_cmp_eq(left: &Object, right: &Object, _operator: &Token) -> Object {
+        Object::Boolean(left == right)
     }
 }
 
@@ -124,8 +124,8 @@ impl Visitor<anyhow::Result<Object>> for Interpreter {
             TokenType::GreaterEqual => Self::operands_cmp_ge(left, right, operator)?,
             TokenType::Less => Self::operands_cmp_lt(left, right, operator)?,
             TokenType::LessEqual => Self::operands_cmp_le(left, right, operator)?,
-            TokenType::BangEqual => Self::operands_cmp_ne(left, right, operator)?,
-            TokenType::EqualEqual => Self::operands_cmp_eq(left, right, operator)?,
+            TokenType::BangEqual => Self::operands_cmp_ne(left, right, operator),
+            TokenType::EqualEqual => Self::operands_cmp_eq(left, right, operator),
             _ => unreachable!(),
         })
     }
