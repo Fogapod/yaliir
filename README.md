@@ -11,6 +11,17 @@ Syntax examples (taken from book):
 // Your first Lox program!
 print "Hello, world!";
 
+// variables
+var a;
+var b = a;
+
+// branching
+if (b == nil) {
+  print "b is nil";
+} else {
+  print "b is something else";
+}
+
 // for loop
 for (var a = 1; a < 10; a = a + 1) {
   print a;
