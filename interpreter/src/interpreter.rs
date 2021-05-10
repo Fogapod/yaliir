@@ -201,7 +201,17 @@ impl expression::Visitor<anyhow::Result<Object>> for Interpreter {
         operator: &Token,
         right: &Expr,
     ) -> anyhow::Result<Object> {
-        todo!();
+        let left = self.evaluate(left)?;
+
+        if operator.token_type == TokenType::Or {
+            if left.is_truthy() {
+                return Ok(left);
+            }
+        } else if !left.is_truthy() {
+            return Ok(left);
+        }
+
+        self.evaluate(right)
     }
 
     fn visit_set(&mut self, object: &Expr, token: &Token, value: &Expr) -> anyhow::Result<Object> {
@@ -232,8 +242,30 @@ impl expression::Visitor<anyhow::Result<Object>> for Interpreter {
 }
 
 impl statement::Visitor<anyhow::Result<()>> for Interpreter {
+    fn visit_block(&mut self, statements: &[Stmt]) -> anyhow::Result<()> {
+        self.execute_block(
+            statements,
+            &Environment::new(Some(self.environment.clone())),
+        )
+    }
+
     fn visit_expression(&mut self, value: &Expr) -> anyhow::Result<()> {
         self.evaluate(value).map(|_| {})
+    }
+
+    fn visit_if(
+        &mut self,
+        condition: &Expr,
+        then_branch: &Stmt,
+        else_branch: &Option<Box<Stmt>>,
+    ) -> anyhow::Result<()> {
+        if self.evaluate(condition)?.is_truthy() {
+            self.execute(then_branch)?;
+        } else if let Some(else_branch) = else_branch {
+            self.execute(else_branch)?;
+        }
+
+        Ok(())
     }
 
     fn visit_print(&mut self, value: &Expr) -> anyhow::Result<()> {
@@ -256,10 +288,11 @@ impl statement::Visitor<anyhow::Result<()>> for Interpreter {
         Ok(())
     }
 
-    fn visit_block(&mut self, statements: &[Stmt]) -> anyhow::Result<()> {
-        self.execute_block(
-            statements,
-            &Environment::new(Some(self.environment.clone())),
-        )
+    fn visit_while(&mut self, condition: &Expr, body: &Stmt) -> anyhow::Result<()> {
+        while self.evaluate(condition)?.is_truthy() {
+            self.execute(body)?;
+        }
+
+        Ok(())
     }
 }

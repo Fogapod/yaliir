@@ -287,6 +287,7 @@ fn define_ast(dest_path: &Path, base_name: &str, imports: &[Import], types: &[Ty
             "
 {imports}
 
+#[derive(Debug)]
 pub enum {base_name} {{
     {enum_def}
 }}
