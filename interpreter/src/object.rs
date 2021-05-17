@@ -1,11 +1,14 @@
 use std::fmt;
 
-#[derive(Debug, Clone)]
+use crate::function::Function;
+
+#[derive(Clone, Debug)]
 pub enum Object {
     Null,
     Boolean(bool),
     Number(f64),
     String(String),
+    Callable(Function),
 }
 
 impl Object {
@@ -20,17 +23,18 @@ impl Object {
 
 impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &self {
+        match self {
             Object::Null => write!(f, "nil"),
-            Object::Boolean(v) => write!(f, "{}", v.to_string()),
+            Object::Boolean(v) => write!(f, "{}", v),
             Object::Number(v) => {
                 let mut text = v.to_string();
                 if let Some(value) = text.strip_prefix(".0") {
-                    text = value.to_string();
+                    text = value.to_owned();
                 }
                 write!(f, "{}", text)
             }
-            Object::String(v) => write!(f, "{}", v.to_string()),
+            Object::String(v) => write!(f, "{}", v),
+            Object::Callable(v) => write!(f, "{}", v),
         }
     }
 }

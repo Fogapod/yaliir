@@ -121,7 +121,7 @@ impl Scanner {
             literal: current_lexeme
                 .get(1..current_lexeme.len() - 1)
                 .unwrap()
-                .to_string(),
+                .to_owned(),
         });
 
         Ok(())
@@ -272,7 +272,7 @@ impl Scanner {
         }
         self.tokens.push(Token {
             token_type: TokenType::Eof,
-            lexeme: "".to_string(),
+            lexeme: "".to_owned(),
             line: self.line,
         });
 

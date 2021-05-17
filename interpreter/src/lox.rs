@@ -1,11 +1,12 @@
+use std::error::Error;
 use std::fs;
 use std::io;
 use std::path::Path;
 use std::process;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
 
-use crate::errors::RuntimeError;
+use crate::error::LoxError;
 use crate::interpreter::Interpreter;
 use crate::parser::Parser;
 use crate::scanner::Scanner;
@@ -26,7 +27,7 @@ impl Lox {
         }
     }
 
-    pub fn run_file(&mut self, source_file: &Path) -> Result<()> {
+    pub fn run_file(&mut self, source_file: &Path) -> anyhow::Result<()> {
         let contents = fs::read_to_string(source_file)
             .with_context(|| format!("could not read file `{}`", source_file.to_string_lossy()))?;
 
@@ -43,7 +44,8 @@ impl Lox {
 
         Ok(())
     }
-    pub fn run_prompt(&mut self) -> Result<()> {
+
+    pub fn run_prompt(&mut self) -> Result<(), Box<dyn Error>> {
         loop {
             let mut line = String::new();
 
@@ -51,7 +53,7 @@ impl Lox {
 
             if io::stdin()
                 .read_line(&mut line)
-                .with_context(|| "unable to read stdin".to_string())?
+                .with_context(|| "unable to read stdin".to_owned())?
                 == 0
             {
                 break;
@@ -66,28 +68,35 @@ impl Lox {
         Ok(())
     }
 
-    fn run(&mut self, source: &str) -> Result<()> {
+    fn run(&mut self, source: &str) -> Result<(), LoxError> {
         eprintln!("running source:\n{}", source);
 
         let mut scanner = Scanner::new(source);
         let tokens = scanner.scan_tokens(self);
 
         if self.had_error {
-            anyhow::bail!("encountered error(s) during scanning");
+            return Err(LoxError::Error(
+                "encountered error(s) during scanning".to_owned(),
+            ));
         }
 
         let mut parser = Parser::new(tokens);
         let statements = parser.parse(self);
 
         if self.had_error {
-            anyhow::bail!("encountered error(s) during parsing");
+            return Err(LoxError::Error(
+                "encountered error(s) during parsing".to_owned(),
+            ));
         }
 
-        if let Err(error) = self.interpreter.interpret(&statements) {
-            println!("{}", error);
-
-            self.runtime_error(&error.downcast_ref::<RuntimeError>().unwrap());
-        }
+        if let Err(err) = self.interpreter.interpret(&statements) {
+            match err {
+                LoxError::Runtime { message, token } => {
+                    self.runtime_error(&message, &token);
+                }
+                e => return Err(e),
+            }
+        };
 
         Ok(())
     }
@@ -104,8 +113,8 @@ impl Lox {
         }
     }
 
-    pub fn runtime_error(&mut self, error: &RuntimeError) {
-        eprintln!("{}\n[line {}]", error.message, error.token.line);
+    pub fn runtime_error(&mut self, message: &str, token: &Token) {
+        eprintln!("{}\n[line {}]", message, token.line);
 
         self.had_runtime_error = true;
     }

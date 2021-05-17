@@ -85,7 +85,7 @@ mod test {
         let expression = Expr::Binary {
             left: Box::new(Expr::Unary {
                 operator: Token {
-                    lexeme: "-".to_string(),
+                    lexeme: "-".to_owned(),
                     line: 1,
                     token_type: TokenType::Minus,
                 },
@@ -94,7 +94,7 @@ mod test {
                 }),
             }),
             operator: Token {
-                lexeme: "*".to_string(),
+                lexeme: "*".to_owned(),
                 line: 1,
                 token_type: TokenType::Star,
             },

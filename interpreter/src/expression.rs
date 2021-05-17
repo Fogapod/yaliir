@@ -1,7 +1,7 @@
 use crate::object::Object;
 use crate::token::Token;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Expr {
     Assign {
         name: Token,
@@ -13,8 +13,8 @@ pub enum Expr {
         right: Box<Expr>,
     },
     Call {
-        callee: Token,
-        paren: Box<Expr>,
+        callee: Box<Expr>,
+        paren: Token,
         arguments: Vec<Expr>,
     },
     Get {
@@ -41,7 +41,6 @@ pub enum Expr {
         keyword: Token,
         method: Token,
     },
-
     This {
         keyword: Token,
     },
@@ -91,7 +90,7 @@ impl Expr {
 pub trait Visitor<R> {
     fn visit_assign(&mut self, name: &Token, value: &Expr) -> R;
     fn visit_binary(&mut self, left: &Expr, operator: &Token, right: &Expr) -> R;
-    fn visit_call(&mut self, callee: &Token, paren: &Expr, arguments: &[Expr]) -> R;
+    fn visit_call(&mut self, callee: &Expr, paren: &Token, arguments: &[Expr]) -> R;
     fn visit_get(&mut self, object: &Expr, name: &Token) -> R;
     fn visit_grouping(&mut self, expression: &Expr) -> R;
     fn visit_literal(&mut self, object: &Object) -> R;

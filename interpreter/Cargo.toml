@@ -15,3 +15,4 @@ license = "MIT"
 phf = { version = "0.8.0", features = ["macros"] }
 anyhow = "1.0.40"
 exitcode = "1.1.2"
+thiserror = "1.0"
