@@ -31,7 +31,7 @@ dependencies = [
 
 [[package]]
 name = "interpreter"
-version = "0.0.8"
+version = "0.0.10"
 dependencies = [
  "anyhow",
  "exitcode",

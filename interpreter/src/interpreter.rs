@@ -12,7 +12,7 @@ use crate::statement::{self, Stmt};
 use crate::token::{Token, TokenType};
 
 pub struct Interpreter {
-    pub(crate) globals: SharedEnv,
+    globals: SharedEnv,
     environment: SharedEnv,
 }
 
